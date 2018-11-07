@@ -217,7 +217,7 @@ int main() {
 	  threadI2C.start(I2C_thread);
 	  init_statistical_data();
 // $TICKER_ON	
-		app_ticker.attach(sample,SAMPLING[mode]);
+		//app_ticker.attach(sample,SAMPLING[mode]);
 		pc.printf("mbed-os-rev: %d.%d.%d\r\n", MBED_MAJOR_VERSION, MBED_MINOR_VERSION, MBED_PATCH_VERSION);	
 
  	while (true) {
