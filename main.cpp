@@ -73,8 +73,8 @@ void userButtonHandler(void) {
 		st_timer.reset();
 	}
 	//$ TICKER ON
-	//app_ticker.detach();
-	//app_ticker.attach(sample,SAMPLING[mode]);
+	app_ticker.detach();
+	app_ticker.attach(sample,SAMPLING[mode]);
 	
 	modeChanged = true;
 }
@@ -222,15 +222,15 @@ int main() {
 
  	while (true) {
 // $TICKER_ON		
-//				if (ticker_fired) {
-//					gps_event.set(0x01);
-//					handle_data();
-//					ticker_fired = !ticker_fired;
-//				}
-
-// $TICKER OFF
+				if (ticker_fired) {
 					gps_event.set(0x01);
 					handle_data();
+					ticker_fired = !ticker_fired;
+				}
+
+// $TICKER OFF
+//					gps_event.set(0x01);
+//					handle_data();
 
 		if (modeChanged) {
 					monitoringTypeLed.write(mode);
@@ -244,9 +244,9 @@ int main() {
 				} else if (mode==TEST_MODE) {
 						light_led_color(rgb_info.color);	
 				}
-//			Thread::wait(1);
+			Thread::wait(1);
 // $TICKER OFF
-				Thread::wait(SAMPLING[mode]*1000);
+//				Thread::wait(SAMPLING[mode]*1000);
 	}
 }
 
