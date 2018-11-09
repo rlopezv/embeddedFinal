@@ -58,7 +58,7 @@ int SerialGPS::sample() {
                 float degrees = trunc(latitude / 100.0f);
                 float minutes = latitude - (degrees * 100.0f);
                 latitude = degrees + minutes / 60.0f;    
-                degrees = trunc(longitude / 100.0f * 0.01f);
+                degrees = trunc(longitude / 100.0f );
                 minutes = longitude - (degrees * 100.0f);
                 longitude = degrees + minutes / 60.0f;
                 return 1;

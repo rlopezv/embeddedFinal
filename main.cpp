@@ -7,7 +7,7 @@ InterruptIn userButton (PB_2);
 BusOut monitoringTypeLed(LED1, LED2, LED3);
 DigitalOut red(PH_0);
 DigitalOut green(PH_1);
-DigitalOut blue(PA_5);
+DigitalOut blue(PB_13);
 
 const char *MODES [] = {TEST_MODE_LABEL, NORMAL_MODE_LABEL, LOWPOWER_MODE_LABEL, ADVANCED_MODE_LABEL};
 
@@ -56,6 +56,11 @@ Timer st_timer;
 Ticker app_ticker;
 bool ticker_fired = false;
 
+//Ticker for blinking rgb
+Ticker rgbTicker; 
+bool rgb_blink_fired = false;
+
+
 void sample() {
   ticker_fired = true; 
 }
@@ -94,24 +99,51 @@ int getLedStatus(int mode) {
 	return result;
 }
 
-void lightLed(bool sm, bool light, bool temp, bool humidity) {
+void rbgBlink() {
+	if (!rgb_blink_fired) {
+		red = 0;
+		green = 0;
+		blue= 0;
+	} else if (rgb_blink_fired) {
+		red = 1;
+		green = 1;
+		blue = 1;
+	}
+	rgb_blink_fired = !rgb_blink_fired;
+}
+
+void lightLed(bool sm, bool light, bool temp, bool humidity, bool acc) {
+	//YELLOW
 	if (sm) {
 					red = 0;																													
 					green = 0;																												
 					blue = 1;																													
+	//WHITE
 	} else if (light) {
 					red = 0;																													
 					green = 0;																												
 					blue = 0;
+	//PURPLE
 	} else if (temp) {
 					red = 0;																													
 					green = 1;																												
 					blue = 0;
+	//TURQUOISE
 	} else if (humidity) {
 					red = 1;																													
 					green = 0;																												
 					blue = 0;
-	}	
+	
+	} else if (acc) {
+					red = 0;																													
+					green = 0;																												
+					blue = 0;
+	}	else {
+					red = 1;																													
+					green = 1;																												
+					blue = 1;
+					rgbTicker.attach(&rbgBlink,0.5);
+	}
 }
 
 void handle_data() {
@@ -147,18 +179,19 @@ void light_led_color(char *color) {
 
 void handle_statistical_led() {
 				//If errors
-				if (sm_summary_info.bounds_error || light_summary_info.bounds_error || temp_summary_info.bounds_error || humidity_summary_info.bounds_error) {
-					if (sensor_alert_info.sm>sensor_alert_info.light && sensor_alert_info.sm>sensor_alert_info.temperature && sensor_alert_info.sm>sensor_alert_info.humidity) {
-						//lightLed(sm_summary_info.bounds_error,light_summary_info.bounds_error,temp_summary_info.bounds_error,humidity_summary_info.bounds_error);					
-						lightLed(true,false,false,false);
-					} else if (sensor_alert_info.light>sensor_alert_info.sm && sensor_alert_info.light>sensor_alert_info.temperature && sensor_alert_info.light>sensor_alert_info.humidity) {
-						//lightLed(sm_summary_info.bounds_error,light_summary_info.bounds_error,temp_summary_info.bounds_error,humidity_summary_info.bounds_error);					
-						lightLed(false,true,false,false);
-					} else if (sensor_alert_info.temperature>sensor_alert_info.sm && sensor_alert_info.temperature>sensor_alert_info.light && sensor_alert_info.temperature>sensor_alert_info.humidity) {
-						//lightLed(sm_summary_info.bounds_error,light_summary_info.bounds_error,temp_summary_info.bounds_error,humidity_summary_info.bounds_error);					
-						lightLed(false,false,true,false);
+				if (sm_summary_info.bounds_error || light_summary_info.bounds_error || temp_summary_info.bounds_error || humidity_summary_info.bounds_error || acc_summary_info.bounds_error) {
+					if (sensor_alert_info.sm>sensor_alert_info.light && sensor_alert_info.sm>sensor_alert_info.temperature && sensor_alert_info.sm>sensor_alert_info.humidity && sensor_alert_info.sm>sensor_alert_info.acc) {
+						lightLed(true,false,false,false, false);
+					} else if (sensor_alert_info.light>sensor_alert_info.sm && sensor_alert_info.light>sensor_alert_info.temperature && sensor_alert_info.light>sensor_alert_info.humidity && sensor_alert_info.light>sensor_alert_info.acc) {
+						lightLed(false,true,false,false, false);
+					} else if (sensor_alert_info.temperature>sensor_alert_info.sm && sensor_alert_info.temperature>sensor_alert_info.light && sensor_alert_info.temperature>sensor_alert_info.humidity && sensor_alert_info.temperature>sensor_alert_info.acc) {
+						lightLed(false,false,true,false,false);
+					} else if (sensor_alert_info.humidity>sensor_alert_info.sm && sensor_alert_info.humidity>sensor_alert_info.light && sensor_alert_info.humidity>sensor_alert_info.temperature && sensor_alert_info.humidity>sensor_alert_info.acc) {
+						lightLed(false,false,false,true,false);
+					} else if (sensor_alert_info.acc>sensor_alert_info.sm && sensor_alert_info.acc>sensor_alert_info.light && sensor_alert_info.acc>sensor_alert_info.temperature && sensor_alert_info.acc>sensor_alert_info.humidity) {
+						lightLed(false,false,false,false,true);
 					} else {
-						lightLed(false,false,false,true);
+						lightLed(false,false,false,false,false);
 					}
 				}
 				//Premodimant color in period
@@ -170,27 +203,16 @@ void handle_statistical_led() {
 					} else {
 						light_led_color(GREEN);
 					}
-				} 
-				
-}
-void handle_statistical_data() {
-				pc.printf("****************STATISTICS*****************\n\r");
-				pc.printf("Light-> Max:%0.3fºC, Mean:%0.3fºC, Min:%0.3fºC\n\r", light_summary_info.max, light_summary_info.mean, light_summary_info.min );
-				pc.printf("Temperature-> Max:%0.3fºC, Mean:%0.3fºC, Min:%0.3fºC\n\r", temp_summary_info.max, temp_summary_info.mean, temp_summary_info.min );
-				pc.printf("Humidity-> Max:%6.3f%%, Mean:%6.3f%%, Min:%6.3f%%\n\r", humidity_summary_info.max, humidity_summary_info.mean, humidity_summary_info.min );
-				pc.printf("Soil Moisture-> Max:%6.3f%%, Mean:%6.3f%%, Min:%6.3f%%\n\r", sm_summary_info.max, sm_summary_info.mean, sm_summary_info.min );
-				pc.printf("Accelerometer-> Max(x,y,z):(%6.3f,%6.3f,%6.3f) Min(x,y,z):%6.3f,%6.3f,%6.3f \n\r", acc_summary_info.xmax, acc_summary_info.ymax, acc_summary_info.zmax,
-				acc_summary_info.xmin, acc_summary_info.ymin, acc_summary_info.zmin );
-	pc.printf("Alerts-> sm:%d, light:%d, temp:%d, humidity:%d\n\r", sensor_alert_info.sm, sensor_alert_info.light, sensor_alert_info.temperature , sensor_alert_info.humidity);
-				handle_statistical_led();
+				} 				
 }
 
 //Init data
 void init_statistical_data() {
 				light_summary_info.bounds_error = false;
 				humidity_summary_info.bounds_error = false;
+				sm_summary_info.bounds_error = false;
 				temp_summary_info.bounds_error = false;
-				temp_summary_info.bounds_error = false;
+				acc_summary_info.bounds_error = false;
       	light_summary_info.max=0, light_summary_info.mean=0, light_summary_info.min=0;
 				temp_summary_info.max=0, temp_summary_info.mean=0, temp_summary_info.min=0;
 				humidity_summary_info.max=0, humidity_summary_info.mean=0, humidity_summary_info.min=0;
@@ -198,16 +220,33 @@ void init_statistical_data() {
 				acc_summary_info.xmax=0, acc_summary_info.ymax=0, acc_summary_info.zmax=0,
 				acc_summary_info.xmin=0, acc_summary_info.ymin=0, acc_summary_info.zmin=0;
 				sensor_alert_info.green =0, sensor_alert_info.blue =0, sensor_alert_info.red =0;
-				sensor_alert_info.sm =0, sensor_alert_info.humidity =0, sensor_alert_info.light =0, sensor_alert_info.temperature =0;
+				sensor_alert_info.sm =0, sensor_alert_info.humidity =0, sensor_alert_info.light =0, sensor_alert_info.temperature =0, sensor_alert_info.acc=0;
 				i2cTicks = 1;
 	      analogTicks = 1;
 	
 }
 
+void handle_statistical_data() {
+				rgbTicker.detach();
+      	pc.printf("****************STATISTICS*****************\n\r");
+				pc.printf("Light-> Max:%0.3fºC, Mean:%0.3fºC, Min:%0.3fºC\n\r", light_summary_info.max, light_summary_info.mean, light_summary_info.min );
+				pc.printf("Temperature-> Max:%0.3fºC, Mean:%0.3fºC, Min:%0.3fºC\n\r", temp_summary_info.max, temp_summary_info.mean, temp_summary_info.min );
+				pc.printf("Humidity-> Max:%6.3f%%, Mean:%6.3f%%, Min:%6.3f%%\n\r", humidity_summary_info.max, humidity_summary_info.mean, humidity_summary_info.min );
+				pc.printf("Soil Moisture-> Max:%6.3f%%, Mean:%6.3f%%, Min:%6.3f%%\n\r", sm_summary_info.max, sm_summary_info.mean, sm_summary_info.min );
+				pc.printf("Accelerometer-> Max(x,y,z):(%6.3f,%6.3f,%6.3f) Min(x,y,z):%6.3f,%6.3f,%6.3f \n\r", acc_summary_info.xmax, acc_summary_info.ymax, acc_summary_info.zmax,
+				acc_summary_info.xmin, acc_summary_info.ymin, acc_summary_info.zmin );
+				pc.printf("Alerts-> sm:%d, light:%d, temp:%d, humidity:%d, acc:%d\n\r", sensor_alert_info.sm, sensor_alert_info.light, sensor_alert_info.temperature , sensor_alert_info.humidity);
+	      pc.printf("Predominant Color-> RGB:(%d,%d,%d)\n\r", sensor_alert_info.red, sensor_alert_info.green, sensor_alert_info.blue);
+				handle_statistical_led();
+				init_statistical_data();
+}
+
+
 
 // main() runs in its own thread in the OS
 int main() {
 
+	  monitoringTypeLed.write(getLedStatus(mode));
 	  //Registers user button pullup for changing mode
 		userButton.mode(PullUp);
 	  userButton.rise(userButtonHandler);
@@ -233,12 +272,13 @@ int main() {
 //					handle_data();
 
 		if (modeChanged) {
-					monitoringTypeLed.write(mode);
+					monitoringTypeLed.write(getLedStatus(mode));
+					modeChanged = !modeChanged;
+					init_statistical_data();
 				}
 				if (mode==NORMAL_MODE) {
 						if (st_timer.read_ms()>=STATISTIC_TIME) {
 								handle_statistical_data();
-								init_statistical_data();
 								st_timer.reset();
 						}
 				} else if (mode==TEST_MODE) {

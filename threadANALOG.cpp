@@ -74,7 +74,7 @@ void ANALOG_thread() {
 			  gps_event.wait_all(0x02);
 			  //Wait for signal
 				smValue = soil_moisture.read();
-				if (smValue<SM_MIN_VALUE && smValue>SM_MAX_VALUE) {
+				if (smValue<SM_MIN_VALUE || smValue>SM_MAX_VALUE) {
 					sm_summary_info.bounds_error = true;	
 					sensor_alert_info.sm++;
 				}
@@ -87,7 +87,7 @@ void ANALOG_thread() {
 				sm_summary_info.mean=((sm_summary_info.mean*(analogTicks-1))+smValue)/analogTicks;
 				
 				lightValue = light_sensor.read();
-				if (lightValue<LIGHT_MIN_VALUE && lightValue>LIGHT_MAX_VALUE) {
+				if (lightValue<LIGHT_MIN_VALUE || lightValue>LIGHT_MAX_VALUE) {
 					light_summary_info.bounds_error = true;	
 					sensor_alert_info.light++;
 				}

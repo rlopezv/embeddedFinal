@@ -56,12 +56,17 @@ void I2C_thread() {
 		if (i2cTicks==1 || acc_summary_info.zmin>acc_info.zPos) {
 					acc_summary_info.zmin=acc_info.zPos;
 		}
+		if (acc_info.zPos<ZPOS_MIN_VALUE || acc_info.zPos>ZPOS_MAX_VALUE) {
+					acc_summary_info.bounds_error = true;	
+					sensor_alert_info.acc++;
+		}
+
 		
 		//Temperature Hummidity
 		if (th_sensor.check()) {
 			if (th_sensor.measure()) {
 				tempValue = th_sensor.get_temperature();
-				if (tempValue<TEMP_MIN_VALUE && tempValue>TEMP_MAX_VALUE) {
+				if (tempValue<TEMP_MIN_VALUE || tempValue>TEMP_MAX_VALUE) {
 					temp_summary_info.bounds_error = true;	
 					sensor_alert_info.temperature++;
 				}
@@ -75,7 +80,7 @@ void I2C_thread() {
 				temp_summary_info.mean=((temp_summary_info.mean*(i2cTicks-1))+tempValue)/i2cTicks;
 				
 				humidityValue = th_sensor.get_humidity();
-				if (humidityValue<HUMIDITY_MIN_VALUE && humidityValue>HUMIDITY_MAX_VALUE) {
+				if (humidityValue<HUMIDITY_MIN_VALUE || humidityValue>HUMIDITY_MAX_VALUE) {
 					humidity_summary_info.bounds_error = true;	
 					sensor_alert_info.humidity++;
 				}

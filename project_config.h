@@ -23,14 +23,15 @@
 #define BLUE "BLUE"
 
 #define TEST_SAMPLING 2
-#define NORMAL_SAMPLING 30
+#define NORMAL_SAMPLING 3
 
 #define TEST_SAMPLING_MS 2000
 #define NORMAL_SAMPLING_MS 30000
 
 #define TIME_OFFSET 2
 #define SAMPLING_TIME 2000
-#define STATISTIC_TIME 3600000
+#define STATISTIC_TIME 12000
+#define STATISTIC_TIME_MS 3600000
 #define MAX_MODES 2
 
 
@@ -43,6 +44,9 @@
 #define LIGHT_MAX_VALUE 100
 #define SM_MIN_VALUE 0
 #define SM_MAX_VALUE 100
+#define ZPOS_MIN_VALUE 0.9
+#define ZPOS_MAX_VALUE 1.0
+
 
 
 typedef struct {
@@ -52,6 +56,7 @@ typedef struct {
 
 typedef struct {
   float xmax, xmin, ymax, ymin, zmax, zmin;
+	bool bounds_error;
 } acc_sumary_data;
 
 
@@ -77,7 +82,7 @@ typedef struct {
 } acc_data;
 
 typedef struct {
-  int sm, light, humidity, temperature;
+  int sm, light, humidity, temperature, acc;
 	int red, green, blue;
 } sensor_alert_data;
 
